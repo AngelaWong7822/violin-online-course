@@ -1,0 +1,11 @@
+{
+  "name": "violin-online-course",
+  "private": true,
+  "scripts": {
+    "build:css": "tailwindcss -i css/tailwind-src.css -o css/site.css --minify",
+    "watch:css": "tailwindcss -i css/tailwind-src.css -o css/site.css --watch"
+  },
+  "devDependencies": {
+    "tailwindcss": "3.4.17"
+  }
+}

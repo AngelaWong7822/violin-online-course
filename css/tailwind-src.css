@@ -1,0 +1,35 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html { scroll-behavior: smooth; }
+  body { @apply bg-ivory text-ink font-sans antialiased; }
+  a { @apply text-gold-deep; }
+  a:hover { color: #5C4413; }
+  :focus-visible { outline: 2px solid #7A5C1C; outline-offset: 2px; }
+}
+
+@layer components {
+  .container-page { @apply mx-auto w-full max-w-page px-5 sm:px-6; }
+  .btn-primary {
+    @apply inline-flex items-center justify-center rounded-full bg-gold px-7 py-3.5 text-base font-bold text-ink no-underline transition hover:brightness-95;
+  }
+  .btn-outline {
+    @apply inline-flex items-center justify-center rounded-full border border-[#CDB27A] px-5 py-2.5 text-sm font-medium text-ink no-underline transition hover:bg-cream/50;
+  }
+  .section-title { @apply font-serif text-2xl font-bold sm:text-3xl; }
+  .card { @apply rounded-2xl border border-line bg-white; }
+  .tag { @apply inline-block rounded-full px-2.5 py-0.5 text-xs font-medium; }
+
+  /* Long-form text on the policy pages */
+  .prose-page h2 { @apply mt-10 mb-3 font-serif text-xl font-bold; }
+  .prose-page p, .prose-page li { @apply text-[15px] leading-8 text-[#4A4136]; }
+  .prose-page ul { @apply list-disc space-y-1 pl-6; }
+  .prose-page ol { @apply list-decimal space-y-1 pl-6; }
+
+  /* FAQ accordion built on <details> */
+  .faq summary { @apply flex cursor-pointer list-none items-center justify-between gap-4 p-5 text-base font-medium; }
+  .faq summary::-webkit-details-marker { display: none; }
+  .faq[open] summary svg { transform: rotate(180deg); }
+}
