@@ -34,7 +34,6 @@ function profileFields() {
       <label class="form-label" for="name">姓名</label>
       <input class="form-input" id="name" name="name" required maxlength="80" autocomplete="name"
         value="${esc(p.name || user.user_metadata?.full_name || '')}">
-      <p class="form-hint">如代子女報讀，請填寫家長姓名。</p>
     </div>
     <div>
       <label class="form-label" for="whatsapp">WhatsApp 電話號碼</label>
