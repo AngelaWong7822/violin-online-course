@@ -55,6 +55,7 @@ function readProfileForm(form) {
   const name = form.name.value.trim();
   const whatsapp = normalizeWhatsapp(form.whatsapp.value);
   if (!name) return { error: '請輸入姓名。' };
+  if (!form.whatsapp.value.trim()) return { error: '請輸入 WhatsApp 電話號碼。' };
   if (!whatsapp) return { error: 'WhatsApp 電話號碼格式不正確。香港號碼請輸入 8 位數字。' };
   return { row: { id: user.id, name, whatsapp, marketing_consent: !form.optout.checked } };
 }
