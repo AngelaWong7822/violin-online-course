@@ -1,4 +1,4 @@
-// "My account": profile (name, WhatsApp, consent), learners, password, sign out.
+// "My account": profile (name, WhatsApp, consent), password, sign out.
 // With ?setup=1 it is the first-login form that must be completed.
 import { mountLayout, esc } from './layout.js';
 import { getClient } from './supabase.js';
@@ -12,12 +12,9 @@ mountLayout();
 const root = document.getElementById('page-root');
 const params = new URLSearchParams(location.search);
 const next = safeNext(params.get('next'));
-const thisYear = new Date().getFullYear();
 
 let user;
 let profile;
-let learners = [];
-let editingId = null;
 
 const alert = (kind, message) =>
   `<div class="alert alert-${kind}" role="${kind === 'error' ? 'alert' : 'status'}">${esc(message)}</div>`;
@@ -37,7 +34,7 @@ function profileFields() {
       <label class="form-label" for="name">姓名</label>
       <input class="form-input" id="name" name="name" required maxlength="80" autocomplete="name"
         value="${esc(p.name || user.user_metadata?.full_name || '')}">
-      <p class="form-hint">家長報讀兒童課程，請填寫家長姓名；學員資料可於「我的帳戶」頁面另行登記。</p>
+      <p class="form-hint">如代子女報讀，請填寫家長姓名。</p>
     </div>
     <div>
       <label class="form-label" for="whatsapp">WhatsApp 電話號碼</label>
@@ -116,55 +113,6 @@ function renderSetup() {
 
 /* ---------- normal account page ---------- */
 
-function learnerRows() {
-  if (!learners.length) {
-    return '<p class="text-sm text-muted">尚未登記學員。</p>';
-  }
-  return `<ul class="divide-y divide-line">${learners.map((l) => `
-    <li class="flex items-center justify-between gap-4 py-3">
-      <div>
-        <div class="font-medium">${esc(l.name)}</div>
-        ${l.birth_year ? `<div class="text-sm text-muted">${l.birth_year} 年出生</div>` : ''}
-      </div>
-      <div class="flex shrink-0 gap-2">
-        <button type="button" class="btn-outline px-4 py-1.5" data-edit="${l.id}">修改</button>
-        <button type="button" class="btn-outline px-4 py-1.5" data-delete="${l.id}">刪除</button>
-      </div>
-    </li>`).join('')}</ul>`;
-}
-
-function birthYearOptions(selected) {
-  const years = [];
-  for (let y = thisYear - 3; y >= thisYear - 90; y -= 1) {
-    years.push(`<option value="${y}" ${y === selected ? 'selected' : ''}>${y}</option>`);
-  }
-  return `<option value="">不提供</option>${years.join('')}`;
-}
-
-function learnerForm() {
-  const l = learners.find((x) => x.id === editingId) || {};
-  return `
-    <form id="learner-form" class="mt-5 grid gap-4 rounded-xl bg-sand p-4 sm:grid-cols-[1fr_9rem_auto] sm:items-end" novalidate>
-      <div>
-        <label class="form-label" for="learner-name">${editingId ? '修改學員姓名' : '新增學員姓名'}</label>
-        <input class="form-input" id="learner-name" name="name" required maxlength="80" value="${esc(l.name || '')}">
-      </div>
-      <div>
-        <label class="form-label" for="learner-year">出生年份</label>
-        <select class="form-input" id="learner-year" name="year">${birthYearOptions(l.birth_year)}</select>
-      </div>
-      <div class="flex gap-2">
-        <button type="submit" class="btn-primary px-6 py-3">${editingId ? '更新' : '新增'}</button>
-        ${editingId ? '<button type="button" class="btn-outline py-3" data-cancel>取消</button>' : ''}
-      </div>
-    </form>`;
-}
-
-function renderLearners() {
-  document.getElementById('learner-list').innerHTML = learnerRows();
-  document.getElementById('learner-form-slot').innerHTML = learnerForm();
-}
-
 function renderAccount() {
   const usesPassword = (user.app_metadata?.providers || [user.app_metadata?.provider]).includes('email');
   const viaGoogle = (user.app_metadata?.providers || []).includes('google');
@@ -180,14 +128,6 @@ function renderAccount() {
         ${profileFields()}
         <button type="submit" class="btn-primary">儲存</button>
       </form>
-    </section>
-
-    <section class="card mt-6 p-6 sm:p-8" aria-labelledby="learner-title">
-      <h2 id="learner-title" class="font-serif text-xl font-bold">學員</h2>
-      <p class="mt-1 text-sm text-muted">如由家長代子女報讀，請登記學習課程的子女。一個帳戶可登記多於一位學員。</p>
-      <div id="learner-notice" class="mt-4 empty:hidden"></div>
-      <div id="learner-list" class="mt-3"></div>
-      <div id="learner-form-slot"></div>
     </section>
 
     ${usesPassword ? `
@@ -213,8 +153,6 @@ function renderAccount() {
       <a href="my-courses.html">← 返回我的課程</a>
       <button type="button" class="btn-outline" data-signout>登出</button>
     </div>`;
-
-  renderLearners();
 
   document.getElementById('profile-form').addEventListener('submit', async (event) => {
     event.preventDefault();
@@ -259,72 +197,7 @@ function renderAccount() {
     }
   });
 
-  root.addEventListener('submit', onLearnerSubmit);
-  root.addEventListener('click', onLearnerClick);
-}
-
-async function loadLearners() {
-  const sb = await getClient();
-  const { data, error } = await sb.from('learners').select('*').order('created_at');
-  if (error) throw error;
-  learners = data;
-}
-
-async function onLearnerSubmit(event) {
-  if (event.target.id !== 'learner-form') return;
-  event.preventDefault();
-  const form = event.target;
-  const name = form.name.value.trim();
-  if (!name) return flash('learner-notice', 'error', '請輸入學員姓名。');
-  const row = { name, birth_year: form.year.value ? Number(form.year.value) : null };
-  const button = form.querySelector('[type=submit]');
-  button.disabled = true;
-  try {
-    const sb = await getClient();
-    const { error } = editingId
-      ? await sb.from('learners').update(row).eq('id', editingId)
-      : await sb.from('learners').insert(row);
-    if (error) throw error;
-    flash('learner-notice', 'ok', editingId ? '學員資料已更新。' : '已新增學員。');
-    editingId = null;
-    await loadLearners();
-    renderLearners();
-  } catch (err) {
-    flash('learner-notice', 'error', authErrorMessage(err));
-    button.disabled = false;
-  }
-}
-
-async function onLearnerClick(event) {
-  const target = event.target;
-  if (target.closest('[data-signout]')) return signOut();
-  if (target.closest('[data-cancel]')) {
-    editingId = null;
-    return renderLearners();
-  }
-  const edit = target.closest('[data-edit]');
-  if (edit) {
-    editingId = edit.dataset.edit;
-    renderLearners();
-    document.getElementById('learner-name').focus();
-    return;
-  }
-  const del = target.closest('[data-delete]');
-  if (del) {
-    const learner = learners.find((l) => l.id === del.dataset.delete);
-    if (!learner || !window.confirm(`確定刪除學員「${learner.name}」？`)) return;
-    try {
-      const sb = await getClient();
-      const { error } = await sb.from('learners').delete().eq('id', learner.id);
-      if (error) throw error;
-      if (editingId === learner.id) editingId = null;
-      flash('learner-notice', 'ok', '已刪除學員。');
-      await loadLearners();
-      renderLearners();
-    } catch (err) {
-      flash('learner-notice', 'error', authErrorMessage(err));
-    }
-  }
+  root.querySelector('[data-signout]').addEventListener('click', signOut);
 }
 
 // Placeholder follows the chosen country
@@ -345,7 +218,6 @@ async function init() {
       if (profile) return location.replace(next); // already done
       return renderSetup();
     }
-    await loadLearners();
     renderAccount();
   } catch (err) {
     root.innerHTML = alert('error', `未能載入帳戶資料：${authErrorMessage(err)}`);

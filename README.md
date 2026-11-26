@@ -12,7 +12,7 @@
 
 | 登入／註冊／忘記密碼 | `login.html` + `js/login.js` | Google 或電郵 + 密碼；`?next=` 登入後返回原頁 |
 | 重設密碼 | `reset-password.html` | 由「忘記密碼」電郵連結進入 |
-| 我的帳戶 | `account.html` | 首次登入（`?setup=1`）必須填姓名、WhatsApp、宣傳同意；學員（子女）管理；改密碼；登出 |
+| 我的帳戶 | `account.html` | 首次登入（`?setup=1`）必須填姓名、WhatsApp（可揀國家）、宣傳反對框；改密碼；登出。一個帳戶 = 一位學員 |
 | 我的課程 | `my-courses.html` | 已報讀課程同觀看期；免費試看課程 |
 
 共用：`js/supabase.js`（Supabase client）、`js/auth.js`（登入狀態、WhatsApp 格式、錯誤訊息）。
@@ -22,7 +22,7 @@
 ## 資料
 
 - 課程資料表：`courses`（一個課程一行）、`lessons`（每堂大綱）。結構同示範內容見 `supabase/migrations/0001_courses.sql`。
-- 會員資料表（`0002_accounts.sql`）：`profiles`（帳戶資料）、`learners`（學員）、`enrollments`（報讀紀錄，網站只可讀，由付款或 Table Editor 新增）。
+- 會員資料表（`0002_accounts.sql`）：`profiles`（帳戶資料）、`learners`（學員，暫時冇用，保留備用）、`enrollments`（報讀紀錄，網站只可讀，由付款或 Table Editor 新增）。
 - ⚠️ 呢個 Supabase project 唔會自動開放新資料表，每個 migration 都要寫 `grant`。
 - **未設定 Supabase 時**，網站會用 `js/demo-data.js` 嘅示範資料。
 - 課程狀態 `status`：`draft`（唔顯示）／`coming_soon`（顯示「即將推出」）／`published`（正式推出）。
