@@ -34,7 +34,7 @@ function profileFields() {
       <label class="form-label" for="name">姓名</label>
       <input class="form-input" id="name" name="name" required maxlength="80" autocomplete="name"
         value="${esc(p.name || user.user_metadata?.full_name || '')}">
-      <p class="form-hint">家長報讀兒童課程，請填寫家長姓名；學員資料可於下方另行登記。</p>
+      <p class="form-hint">家長報讀兒童課程，請填寫家長姓名；學員資料可於「我的帳戶」頁面另行登記。</p>
     </div>
     <div>
       <label class="form-label" for="whatsapp">WhatsApp 電話號碼</label>
@@ -42,10 +42,13 @@ function profileFields() {
         placeholder="例如 9123 4567" value="${esc(displayWhatsapp(p.whatsapp))}">
       <p class="form-hint">香港號碼可直接輸入 8 位數字；其他地區請加上國家／地區號碼，例如 +86 138 0013 8000。</p>
     </div>
-    <label class="flex items-start gap-3 rounded-xl bg-sand p-4 text-sm leading-6">
-      <input type="checkbox" name="consent" class="mt-1 h-4 w-4 shrink-0 accent-[#B8913A]" ${p.marketing_consent ? 'checked' : ''}>
-      <span>本人同意 Tom's Violin Studio 使用本人的姓名、電郵地址及 WhatsApp 電話號碼，向本人發送課程資訊、優惠及活動推廣。本人可隨時取消。詳情請參閱<a href="privacy.html" target="_blank">私隱政策</a>。</span>
-    </label>`;
+    <div class="rounded-xl bg-sand p-4 text-sm leading-6">
+      <p>Tom's Violin Studio 擬使用閣下的姓名、電郵地址及 WhatsApp 電話號碼，向閣下發送小提琴課程（包括網上及實體課程）的資訊、優惠及活動推廣。未經閣下同意，本工作室不會如此使用閣下的個人資料。如閣下不同意，請在下方加上剔號。詳情請參閱<a href="privacy.html" target="_blank">私隱政策</a>。</p>
+      <label class="mt-3 flex items-start gap-3 font-medium">
+        <input type="checkbox" name="optout" class="mt-1 h-4 w-4 shrink-0 accent-[#B8913A]" ${profile && !p.marketing_consent ? 'checked' : ''}>
+        <span>本人反對 Tom's Violin Studio 將本人的個人資料用於上述直接促銷用途。</span>
+      </label>
+    </div>`;
 }
 
 function readProfileForm(form) {
@@ -53,7 +56,7 @@ function readProfileForm(form) {
   const whatsapp = normalizeWhatsapp(form.whatsapp.value);
   if (!name) return { error: '請輸入姓名。' };
   if (!whatsapp) return { error: 'WhatsApp 電話號碼格式不正確。香港號碼請輸入 8 位數字。' };
-  return { row: { id: user.id, name, whatsapp, marketing_consent: form.consent.checked } };
+  return { row: { id: user.id, name, whatsapp, marketing_consent: !form.optout.checked } };
 }
 
 async function saveProfile(row) {
