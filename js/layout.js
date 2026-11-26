@@ -14,7 +14,7 @@ export const icons = {
 
 const logo = `
   <a href="index.html" class="flex items-center gap-3 text-ink no-underline">
-    <span class="flex h-10 w-10 items-center justify-center rounded-full border-[1.5px] border-gold-dark font-serif text-xl font-bold text-gold-deep">L</span>
+    <img src="img/logo.png" alt="" width="40" height="40" class="h-10 w-10">
     <span class="font-serif text-base font-bold sm:text-lg">Tom's Violin Studio</span>
   </a>`;
 
