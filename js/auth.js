@@ -64,23 +64,50 @@ export async function signOut() {
   location.href = 'index.html';
 }
 
+/** Country codes offered for WhatsApp numbers (Hong Kong first = default). */
+export const PHONE_CODES = [
+  { code: '852', label: '香港 +852', pattern: /^[4-9]\d{7}$/, example: '9123 4567' },
+  { code: '853', label: '澳門 +853', pattern: /^6\d{7}$/, example: '6612 3456' },
+  { code: '86', label: '中國內地 +86', pattern: /^1\d{10}$/, example: '138 0013 8000' },
+  { code: '886', label: '台灣 +886', pattern: /^9\d{8}$/, example: '912 345 678' },
+  { code: '65', label: '新加坡 +65', pattern: /^[89]\d{7}$/, example: '8123 4567' },
+  { code: '60', label: '馬來西亞 +60', pattern: /^1\d{8,9}$/, example: '12 345 6789' },
+  { code: '44', label: '英國 +44', pattern: /^7\d{9}$/, example: '7400 123456' },
+  { code: '1', label: '美國／加拿大 +1', pattern: /^[2-9]\d{9}$/, example: '212 555 0123' },
+  { code: '61', label: '澳洲 +61', pattern: /^4\d{8}$/, example: '412 345 678' },
+  { code: '64', label: '紐西蘭 +64', pattern: /^2\d{7,9}$/, example: '21 123 4567' },
+  { code: '81', label: '日本 +81', pattern: /^[789]0\d{8}$/, example: '90 1234 5678' },
+  { code: '82', label: '南韓 +82', pattern: /^1\d{8,9}$/, example: '10 1234 5678' },
+  { code: 'other', label: '其他國家／地區', pattern: null, example: '+國家號碼 電話號碼' },
+];
+
 /**
- * Hong Kong numbers may be typed as "9123 4567"; other places need the
- * country code, e.g. "+86 138 0013 8000". Returns "+85291234567" or null.
+ * Build an E.164 number ("+85291234567") from the chosen country code and
+ * the typed number, or return null if it does not look right. A leading
+ * trunk "0" (e.g. UK 07400…) is dropped. "other" expects "+<code><number>".
  */
-export function normalizeWhatsapp(input) {
-  const raw = String(input || '').trim();
-  const digits = raw.replace(/[\s()-]/g, '');
-  if (/^[4-9]\d{7}$/.test(digits)) return `+852${digits}`;
-  if (/^\+\d{8,15}$/.test(digits)) return digits;
-  if (/^00\d{8,15}$/.test(digits)) return `+${digits.slice(2)}`;
-  return null;
+export function normalizeWhatsapp(code, input) {
+  const raw = String(input || '').replace(/[\s().-]/g, '');
+  if (code === 'other') {
+    const full = raw.startsWith('00') ? `+${raw.slice(2)}` : raw;
+    return /^\+[1-9]\d{7,14}$/.test(full) ? full : null;
+  }
+  const entry = PHONE_CODES.find((c) => c.code === code);
+  if (!entry) return null;
+  let local = raw.startsWith(`+${code}`) ? raw.slice(code.length + 1) : raw;
+  if (local.startsWith('0')) local = local.slice(1);
+  return entry.pattern.test(local) ? `+${code}${local}` : null;
 }
 
-/** Show "+85291234567" as "9123 4567"; other countries as typed. */
-export function displayWhatsapp(value) {
-  const m = /^\+852(\d{4})(\d{4})$/.exec(value || '');
-  return m ? `${m[1]} ${m[2]}` : value || '';
+/** Split a stored "+85291234567" into { code: '852', number: '91234567' } for the form. */
+export function splitWhatsapp(value) {
+  if (!value) return { code: '852', number: '' };
+  const match = PHONE_CODES
+    .filter((c) => c.pattern && value.startsWith(`+${c.code}`))
+    .sort((a, b) => b.code.length - a.code.length)[0];
+  const local = match && value.slice(match.code.length + 1);
+  if (match && match.pattern.test(local)) return { code: match.code, number: local };
+  return { code: 'other', number: value };
 }
 
 /** Supabase auth errors in plain written Chinese. */

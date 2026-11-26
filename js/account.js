@@ -3,7 +3,7 @@
 import { mountLayout, esc } from './layout.js';
 import { getClient } from './supabase.js';
 import {
-  requireUser, getProfile, signOut, safeNext, normalizeWhatsapp, displayWhatsapp,
+  requireUser, getProfile, signOut, safeNext, normalizeWhatsapp, splitWhatsapp, PHONE_CODES,
   authErrorMessage, supabaseConfigured,
 } from './auth.js';
 
@@ -27,8 +27,11 @@ function flash(id, kind, message) {
   box.innerHTML = message ? alert(kind, message) : '';
 }
 
+const phoneExample = (code) => PHONE_CODES.find((c) => c.code === code)?.example || '';
+
 function profileFields() {
   const p = profile || {};
+  const phone = splitWhatsapp(p.whatsapp);
   return `
     <div>
       <label class="form-label" for="name">姓名</label>
@@ -38,9 +41,14 @@ function profileFields() {
     </div>
     <div>
       <label class="form-label" for="whatsapp">WhatsApp 電話號碼</label>
-      <input class="form-input" id="whatsapp" name="whatsapp" type="tel" required inputmode="tel" autocomplete="tel"
-        placeholder="例如 9123 4567" value="${esc(displayWhatsapp(p.whatsapp))}">
-      <p class="form-hint">香港號碼可直接輸入 8 位數字；其他地區請加上國家／地區號碼，例如 +86 138 0013 8000。</p>
+      <div class="flex flex-col gap-2 sm:flex-row">
+        <select class="form-input pr-8 sm:w-auto sm:shrink-0" id="phone-code" name="phoneCode" aria-label="國家／地區號碼">
+          ${PHONE_CODES.map((c) => `<option value="${c.code}" ${c.code === phone.code ? 'selected' : ''}>${esc(c.label)}</option>`).join('')}
+        </select>
+        <input class="form-input min-w-0 flex-1" id="whatsapp" name="whatsapp" type="tel" required inputmode="tel" autocomplete="tel-national"
+          placeholder="例如 ${esc(phoneExample(phone.code))}" value="${esc(phone.number)}">
+      </div>
+      <p class="form-hint">請選擇國家／地區，再輸入電話號碼。</p>
     </div>
     <div class="rounded-xl bg-sand p-4 text-sm leading-6">
       <p>Tom's Violin Studio 擬使用閣下的姓名、電郵地址及 WhatsApp 電話號碼，向閣下發送小提琴課程（包括網上及實體課程）的資訊、優惠及活動推廣。未經閣下同意，本工作室不會如此使用閣下的個人資料。如閣下不同意，請在下方加上剔號。詳情請參閱<a href="privacy.html" target="_blank">私隱政策</a>。</p>
@@ -53,10 +61,16 @@ function profileFields() {
 
 function readProfileForm(form) {
   const name = form.name.value.trim();
-  const whatsapp = normalizeWhatsapp(form.whatsapp.value);
+  const whatsapp = normalizeWhatsapp(form.phoneCode.value, form.whatsapp.value);
   if (!name) return { error: '請輸入姓名。' };
   if (!form.whatsapp.value.trim()) return { error: '請輸入 WhatsApp 電話號碼。' };
-  if (!whatsapp) return { error: 'WhatsApp 電話號碼格式不正確。香港號碼請輸入 8 位數字。' };
+  if (!whatsapp) {
+    return {
+      error: form.phoneCode.value === 'other'
+        ? 'WhatsApp 電話號碼格式不正確。請以「+」開始，輸入國家／地區號碼及電話號碼。'
+        : `WhatsApp 電話號碼格式不正確，例如：${phoneExample(form.phoneCode.value)}。`,
+    };
+  }
   return { row: { id: user.id, name, whatsapp, marketing_consent: !form.optout.checked } };
 }
 
@@ -211,7 +225,9 @@ function renderAccount() {
     button.disabled = true;
     try {
       await saveProfile(row);
-      form.whatsapp.value = displayWhatsapp(profile.whatsapp);
+      const saved = splitWhatsapp(profile.whatsapp);
+      form.phoneCode.value = saved.code;
+      form.whatsapp.value = saved.number;
       flash('profile-notice', 'ok', '資料已儲存。');
     } catch (err) {
       flash('profile-notice', 'error', authErrorMessage(err));
@@ -310,6 +326,12 @@ async function onLearnerClick(event) {
     }
   }
 }
+
+// Placeholder follows the chosen country
+document.addEventListener('change', (event) => {
+  if (event.target.id !== 'phone-code') return;
+  document.getElementById('whatsapp').placeholder = `例如 ${phoneExample(event.target.value)}`;
+});
 
 async function init() {
   if (!supabaseConfigured()) {
