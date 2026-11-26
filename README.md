@@ -2,7 +2,7 @@
 
 小提琴網上課程網站。純 HTML + JavaScript（ES modules）+ Tailwind CSS + Supabase。
 
-## 目前進度：第 1 期（網站骨架同公開頁面）
+## 目前進度：第 2 期（會員）進行中
 
 | 頁面 | 檔案 | 內容 |
 |---|---|---|
@@ -10,11 +10,20 @@
 | 課程介紹頁 | `course.html?c=<slug>` + `js/course.js` | 簡介、適合對象、課程大綱、收費、完成課程後、常見問題 |
 | 條款／私隱／退款 | `terms.html` `privacy.html` `refund.html` | **草稿範本**，`[方括號]` 係待補充內容，上線前要搵專業人士睇 |
 
-未做（之後幾期）：登入註冊、影片、付款、學習進度、管理。頁面上「登入」「免費試看」等按鈕暫時只會彈出「即將推出」。
+| 登入／註冊／忘記密碼 | `login.html` + `js/login.js` | Google 或電郵 + 密碼；`?next=` 登入後返回原頁 |
+| 重設密碼 | `reset-password.html` | 由「忘記密碼」電郵連結進入 |
+| 我的帳戶 | `account.html` | 首次登入（`?setup=1`）必須填姓名、WhatsApp、宣傳同意；學員（子女）管理；改密碼；登出 |
+| 我的課程 | `my-courses.html` | 已報讀課程同觀看期；免費試看課程 |
+
+共用：`js/supabase.js`（Supabase client）、`js/auth.js`（登入狀態、WhatsApp 格式、錯誤訊息）。
+
+未做：上堂頁同影片（等有片）、付款（第 3 期）、學習進度、管理。「進入課程」「免費試看」暫時只會彈出「即將推出」。
 
 ## 資料
 
 - 課程資料表：`courses`（一個課程一行）、`lessons`（每堂大綱）。結構同示範內容見 `supabase/migrations/0001_courses.sql`。
+- 會員資料表（`0002_accounts.sql`）：`profiles`（帳戶資料）、`learners`（學員）、`enrollments`（報讀紀錄，網站只可讀，由付款或 Table Editor 新增）。
+- ⚠️ 呢個 Supabase project 唔會自動開放新資料表，每個 migration 都要寫 `grant`。
 - **未設定 Supabase 時**，網站會用 `js/demo-data.js` 嘅示範資料。
 - 課程狀態 `status`：`draft`（唔顯示）／`coming_soon`（顯示「即將推出」）／`published`（正式推出）。
 - 免費試看堂數由 `free_lessons` 決定（例如 2 = 第 1–2 堂免費）。

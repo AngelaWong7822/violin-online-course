@@ -1,5 +1,6 @@
 // Shared header, footer, "coming soon" notice and small helpers.
 import { CONFIG } from './config.js';
+import { sessionStorageKey } from './supabase.js';
 
 export const esc = (value) =>
   String(value ?? '').replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
@@ -18,6 +19,32 @@ const logo = `
     <span class="font-serif text-base font-bold sm:text-lg">Tom's Violin Studio</span>
   </a>`;
 
+/**
+ * Logged in = a saved Supabase session exists in this browser. Checked
+ * without loading supabase-js so plain pages stay light; member pages verify
+ * the session properly.
+ */
+function looksLoggedIn() {
+  const key = sessionStorageKey();
+  try {
+    return Boolean(key && localStorage.getItem(key));
+  } catch {
+    return false;
+  }
+}
+
+const accountIcon = '<svg class="h-5 w-5" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M4 20c1.5-4 4.5-6 8-6s6.5 2 8 6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>';
+
+function accountLinks() {
+  if (!looksLoggedIn()) {
+    const next = encodeURIComponent((location.pathname.split('/').pop() || 'index.html') + location.search);
+    return `<a href="login.html?next=${next}" class="btn-outline">登入</a>`;
+  }
+  return `
+        <a href="my-courses.html" class="btn-outline">我的課程</a>
+        <a href="account.html" class="-ml-3 flex h-10 w-10 items-center justify-center rounded-full text-ink no-underline hover:bg-cream/60" aria-label="我的帳戶" title="我的帳戶">${accountIcon}</a>`;
+}
+
 function header() {
   return `
   <header class="border-b border-line bg-ivory">
@@ -27,7 +54,7 @@ function header() {
         <a href="index.html#courses" class="hidden text-ink no-underline hover:text-gold-deep md:inline">所有課程</a>
         <a href="index.html#about" class="hidden text-ink no-underline hover:text-gold-deep md:inline">關於 Tom sir</a>
         <a href="index.html#offline" class="hidden text-ink no-underline hover:text-gold-deep md:inline">實體課程</a>
-        <button type="button" class="btn-outline" data-soon="登入功能">登入</button>
+        ${accountLinks()}
       </nav>
     </div>
   </header>`;

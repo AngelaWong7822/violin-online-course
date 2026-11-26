@@ -1,25 +1,11 @@
 // Course catalogue access: Supabase when configured, demo data otherwise.
-import { CONFIG } from './config.js';
 import { DEMO_COURSES } from './demo-data.js';
+import { getClient as client, supabaseConfigured } from './supabase.js';
 
-const SUPABASE_ESM = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/+esm';
 const VISIBLE = ['coming_soon', 'published'];
 
-let clientPromise = null;
-
 export function usingDemoData() {
-  return !CONFIG.supabaseUrl || !CONFIG.supabaseAnonKey;
-}
-
-async function client() {
-  if (!clientPromise) {
-    clientPromise = import(SUPABASE_ESM).then(({ createClient }) =>
-      createClient(CONFIG.supabaseUrl, CONFIG.supabaseAnonKey, {
-        auth: { persistSession: false },
-      }),
-    );
-  }
-  return clientPromise;
+  return !supabaseConfigured();
 }
 
 const bySortOrder = (a, b) => a.sort_order - b.sort_order;

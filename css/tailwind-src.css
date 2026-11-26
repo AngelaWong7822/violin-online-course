@@ -32,4 +32,23 @@
   .faq summary { @apply flex cursor-pointer list-none items-center justify-between gap-4 p-5 text-base font-medium; }
   .faq summary::-webkit-details-marker { display: none; }
   .faq[open] summary svg { transform: rotate(180deg); }
+
+  /* Forms (login / account) */
+  .form-label { @apply mb-1.5 block text-sm font-medium text-ink; }
+  .form-input {
+    @apply block w-full rounded-xl border border-[#D9CBA8] bg-white px-4 py-3 text-base text-ink placeholder:text-[#A89D8B] focus:border-gold-dark focus:outline-none focus:ring-2 focus:ring-gold/30;
+  }
+  .form-hint { @apply mt-1.5 text-xs leading-5 text-muted; }
+  .btn-block { @apply w-full; }
+  .btn-primary:disabled, .btn-outline:disabled { @apply cursor-not-allowed opacity-60; }
+  .btn-google {
+    @apply flex w-full items-center justify-center gap-3 rounded-full border border-[#D9CBA8] bg-white px-5 py-3 text-base font-medium text-ink transition hover:bg-sand;
+  }
+  .divider-text { @apply flex items-center gap-3 text-xs text-muted before:h-px before:flex-1 before:bg-line after:h-px after:flex-1 after:bg-line; }
 }
+
+/* Alerts: built as `alert-${kind}` in JS, so keep them outside @layer (never purged). */
+.alert { @apply rounded-xl px-4 py-3 text-sm leading-6; }
+.alert-error { @apply border border-[#E8B4A8] bg-[#FDF1EE] text-[#8A2E1C]; }
+.alert-ok { @apply border border-[#BFD8B0] bg-[#F1F8EC] text-[#2F5A1E]; }
+.alert-info { @apply border border-line bg-sand text-ink; }
