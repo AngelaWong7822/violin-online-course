@@ -21,6 +21,7 @@
 - 課程頁「立即報讀」→ `js/checkout.js` → Edge Function `create-checkout`（價錢由資料庫讀）→ Stripe 付款頁。
 - 付款成功 → Stripe 通知 Edge Function `stripe-webhook`（核實簽名）→ 自動加 `enrollments`，有效期 = 課程 `access_months`。
 - Stripe 全數退款 → 自動將報讀改為 `refunded`。
+- Edge Functions 用 service_role，都要 grant（見 0004）。
 - Edge Functions 原始碼：`supabase/functions/`；部署要加 `--no-verify-jwt`。
 - Supabase Secrets：`STRIPE_SECRET_KEY`、`STRIPE_WEBHOOK_SECRET`（**唔好放入 code**）。
 

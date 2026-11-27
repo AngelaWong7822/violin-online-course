@@ -1,6 +1,6 @@
 // Enrol / pay for a course through Stripe Checkout (via the create-checkout Edge Function).
 import { getClient, supabaseConfigured } from './supabase.js';
-import { getSession, siteBase } from './auth.js';
+import { getSession, getProfile, siteBase } from './auth.js';
 
 /** Page to come back to after login / profile setup, then continue to payment. */
 const resumeUrl = (slug) => `course.html?c=${encodeURIComponent(slug)}&buy=1`;
@@ -37,8 +37,11 @@ export async function startCheckout(slug) {
   }
 
   const sb = await getClient();
+  // Send the user's token explicitly: right after page load supabase-js may
+  // still be using the public key for function calls.
   const { data, error } = await sb.functions.invoke('create-checkout', {
     body: { course_slug: slug, return_base: siteBase() },
+    headers: { Authorization: `Bearer ${session.access_token}` },
   });
 
   if (!error && data?.url) {
@@ -52,11 +55,16 @@ export async function startCheckout(slug) {
   }
   switch (code) {
     case 'not_logged_in':
-      location.href = `login.html?next=${encodeURIComponent(resumeUrl(slug))}`;
-      return null;
-    case 'no_profile':
+      // We do have a session here, so sending them to log in again would loop.
+      return '登入狀態已失效，請登出後重新登入，再試一次。';
+    case 'no_profile': {
+      // Only send them to fill in the profile if it is really missing;
+      // otherwise the two pages would keep sending each other back.
+      const profile = await getProfile(session.user.id).catch(() => null);
+      if (profile) return '暫時未能前往付款頁面，請稍後再試。';
       location.href = `account.html?setup=1&next=${encodeURIComponent(resumeUrl(slug))}`;
       return null;
+    }
     case 'already_enrolled':
       location.href = 'my-courses.html';
       return null;
