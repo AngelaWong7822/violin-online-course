@@ -131,6 +131,7 @@ Deno.serve(async (req) => {
   const params = formEncode({
     mode: 'payment',
     locale: 'zh-HK',
+    adaptive_pricing: { enabled: false }, // always charge in HKD (no local-currency conversion)
     customer_email: user.email,
     client_reference_id: user.id,
     allowed_payment_method_types: PAYMENT_METHODS, // newer Stripe API name; card includes Apple/Google Pay
