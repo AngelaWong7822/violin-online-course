@@ -2,7 +2,7 @@
 
 小提琴網上課程網站。純 HTML + JavaScript（ES modules）+ Tailwind CSS + Supabase。
 
-## 目前進度：第 2 期（會員）進行中
+## 目前進度：第 3 期（付款）進行中
 
 | 頁面 | 檔案 | 內容 |
 |---|---|---|
@@ -17,7 +17,14 @@
 
 共用：`js/supabase.js`（Supabase client）、`js/auth.js`（登入狀態、WhatsApp 格式、錯誤訊息）。
 
-未做：上堂頁同影片（等有片）、付款（第 3 期）、學習進度、管理。「進入課程」「免費試看」暫時只會彈出「即將推出」。
+### 付款（第 3 期）
+- 課程頁「立即報讀」→ `js/checkout.js` → Edge Function `create-checkout`（價錢由資料庫讀）→ Stripe 付款頁。
+- 付款成功 → Stripe 通知 Edge Function `stripe-webhook`（核實簽名）→ 自動加 `enrollments`，有效期 = 課程 `access_months`。
+- Stripe 全數退款 → 自動將報讀改為 `refunded`。
+- Edge Functions 原始碼：`supabase/functions/`；部署要加 `--no-verify-jwt`。
+- Supabase Secrets：`STRIPE_SECRET_KEY`、`STRIPE_WEBHOOK_SECRET`（**唔好放入 code**）。
+
+未做：上堂頁同影片（等有片）、學習進度、管理。「進入課程」「免費試看」暫時只會彈出「即將推出」。
 
 ## 資料
 

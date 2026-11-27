@@ -83,7 +83,7 @@ function footer() {
 }
 
 /** Small notice for features that arrive in later phases. */
-function toast(message) {
+export function toast(message, ms = 2600) {
   let box = document.getElementById('toast');
   if (!box) {
     box = document.createElement('div');
@@ -96,7 +96,7 @@ function toast(message) {
   box.textContent = message;
   box.style.opacity = '1';
   clearTimeout(box._timer);
-  box._timer = setTimeout(() => { box.style.opacity = '0'; }, 2600);
+  box._timer = setTimeout(() => { box.style.opacity = '0'; }, ms);
 }
 
 export function mountLayout() {

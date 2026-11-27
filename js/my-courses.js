@@ -16,7 +16,7 @@ async function loadEnrollments() {
   const sb = await getClient();
   const { data, error } = await sb
     .from('enrollments')
-    .select('id, status, starts_at, expires_at, courses(id, slug, title, audience_label)')
+    .select('id, status, starts_at, expires_at, stripe_checkout_session_id, courses(id, slug, title, audience_label)')
     .eq('status', 'active')
     .order('expires_at', { ascending: false });
   if (error) throw error;
@@ -65,14 +65,29 @@ async function init() {
     return;
   }
   const { profile } = await requireProfile();
+  const paidSession = new URLSearchParams(location.search).get('paid'); // Stripe session id
+  if (paidSession) history.replaceState(null, '', location.pathname);
   try {
-    const [enrollments, courses] = await Promise.all([loadEnrollments(), listCourses()]);
+    let enrollments = await loadEnrollments();
+    // Stripe's confirmation can arrive a few seconds after the redirect: wait for it.
+    const opened = () => enrollments.some((e) => e.stripe_checkout_session_id === paidSession);
+    for (let i = 0; paidSession && !opened() && i < 8; i += 1) {
+      root.innerHTML = '<div class="alert alert-info">已收到付款，正在開通課程，請稍候…</div>';
+      await new Promise((r) => setTimeout(r, 2000));
+      enrollments = await loadEnrollments();
+    }
+    const courses = await listCourses();
+    const banner = !paidSession ? ''
+      : opened()
+        ? '<div class="alert alert-ok mt-6">付款成功，課程已開通。</div>'
+        : '<div class="alert alert-info mt-6">已收到閣下的付款，課程開通需時，請於數分鐘後重新整理此頁。如仍未顯示，請與我們聯絡。</div>';
     const enrolledIds = new Set(enrollments.map((e) => e.courses.id));
     const trials = courses.filter((c) => c.status === 'published' && c.free_lessons > 0 && !enrolledIds.has(c.id));
 
     root.innerHTML = `
       <h1 class="font-serif text-3xl font-bold">我的課程</h1>
       <p class="mt-2 text-muted">歡迎回來，${esc(profile.name)}。</p>
+      ${banner}
 
       <section class="mt-10" aria-labelledby="enrolled-title">
         <h2 id="enrolled-title" class="mb-4 font-serif text-xl font-bold">已報讀課程</h2>

@@ -1,6 +1,7 @@
 // Course detail page: course.html?c=<slug>
 import { getCourse } from './data.js';
-import { mountLayout, applyConfigLinks, esc, formatHKD, icons, showError } from './layout.js';
+import { mountLayout, applyConfigLinks, esc, formatHKD, icons, showError, toast } from './layout.js';
+import { myEnrollment, startCheckout } from './checkout.js';
 
 const PAYMENT_METHODS = '信用卡 · Apple Pay · Google Pay · Alipay · WeChat Pay';
 
@@ -99,7 +100,10 @@ function pricing(c) {
       <ul class="flex flex-col gap-2 text-[15px] leading-7 text-[#EFE7D6]">
         ${bullets.map((b) => `<li>· ${esc(b)}</li>`).join('')}
       </ul>
-      <button type="button" class="btn-primary mt-2 self-stretch sm:self-start" data-soon="免費試看">${c.free_lessons > 0 ? '免費試看' : '立即報讀'}</button>
+      <div id="enroll-box" class="mt-2 flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-5">
+        <button type="button" class="btn-primary self-stretch sm:self-start" data-enroll="${esc(c.slug)}">立即報讀</button>
+        ${c.free_lessons > 0 ? `<button type="button" class="text-[15px] font-medium text-[#E6CF94] underline-offset-4 hover:underline" data-soon="免費試看">先免費試看${freeRange(c.free_lessons)}</button>` : ''}
+      </div>
       <div class="text-[13px] text-[#CFC4B0]">${PAYMENT_METHODS}</div>
     </div>
     ${after}
@@ -125,6 +129,53 @@ function faqs(c) {
   </section>`;
 }
 
+const formatDate = (iso) => {
+  const d = new Date(iso);
+  return `${d.getFullYear()} 年 ${d.getMonth() + 1} 月 ${d.getDate()} 日`;
+};
+
+/** Enrol button: show "already enrolled" for owners, otherwise go to Stripe. */
+async function setUpEnrol(course) {
+  const box = document.getElementById('enroll-box');
+  if (!box) return;
+
+  let enrolment = null;
+  try {
+    enrolment = await myEnrollment(course.id);
+  } catch (err) {
+    console.error(err);
+  }
+  if (enrolment) {
+    box.innerHTML = `
+      <a href="my-courses.html" class="btn-primary self-stretch sm:self-start">已報讀 · 前往我的課程</a>
+      <span class="text-[14px] text-[#E6CF94]">觀看期至 ${formatDate(enrolment.expires_at)}</span>`;
+    return;
+  }
+
+  const go = async (button) => {
+    button.disabled = true;
+    const label = button.textContent;
+    button.textContent = '正在前往付款頁面…';
+    const message = await startCheckout(course.slug);
+    if (message) {
+      toast(message, 4000);
+      button.disabled = false;
+      button.textContent = label;
+    }
+  };
+
+  box.querySelector('[data-enroll]').addEventListener('click', (event) => go(event.currentTarget));
+
+  // Back from login / profile setup with &buy=1: continue to payment once.
+  const params = new URLSearchParams(location.search);
+  if (params.get('buy') === '1') {
+    params.delete('buy');
+    history.replaceState(null, '', `${location.pathname}?${params}#price`);
+    document.getElementById('price')?.scrollIntoView({ behavior: 'instant' });
+    go(box.querySelector('[data-enroll]'));
+  }
+}
+
 async function main() {
   mountLayout();
   const root = document.getElementById('course-root');
@@ -147,6 +198,7 @@ async function main() {
     // Content renders after load, so honour #outline / #price / #faq links now.
     const target = location.hash && document.getElementById(location.hash.slice(1));
     if (target) target.scrollIntoView({ behavior: 'instant' });
+    if (course.status === 'published' && course.price_hkd != null) setUpEnrol(course);
   } catch (err) {
     console.error(err);
     showError(root, '暫時未能載入課程，請稍後再試。');
