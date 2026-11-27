@@ -133,7 +133,7 @@ Deno.serve(async (req) => {
     locale: 'zh-HK',
     customer_email: user.email,
     client_reference_id: user.id,
-    payment_method_types: PAYMENT_METHODS,
+    allowed_payment_method_types: PAYMENT_METHODS, // newer Stripe API name; card includes Apple/Google Pay
     payment_method_options: PAYMENT_METHODS.includes('wechat_pay') ? { wechat_pay: { client: 'web' } } : undefined,
     line_items: [{
       quantity: 1,
